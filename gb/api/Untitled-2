@@ -1,0 +1,151 @@
+"""
+# TODO: Add parameter types for parameters
+def calculateAngularAcceleration(force, distance, angle, inertia):
+    """calculateAngularAcceleration(force, distance, angle, inertia) -> accel
+
+    Params:
+        force (Newtons): The force applied `distance` below the CG of a rod
+        distance (Meters): The distance below the CG of a rod the force was applied to
+        angle (Degrees): The angle at which the force was applied at relative to the roll axis of the rod
+        inertia (Uh): The inertia of the rod about its CG
+
+    Returns:
+        accel: The angular acceleration of the rod
+
+    """ 
+
+    # Torque is calculated by r x F 
+    # Or F * distance * sin(angle)
+
+    angle_r = np.radians(angle)
+    torque = distance * force * np.sin(angle_r)
+    
+    # Angular acceleration is torque divided by the inertia of the rod
+    accel = torque / inertia
+
+    return accel
+
+def calculateAngleFromAcceleration(force, distance, acceleration, inertia):
+    """calculateAngularAcceleration(force, distance, angle, inertia) -> accel
+
+    Params:
+        force (Newtons): The force applied `distance` below the CG of a rod
+        distance (Meters): The distance below the CG of a rod the force was applied to
+        angle (Degrees): The angle at which the force was applied at relative to the roll axis of the rod
+        inertia (Uh): The inertia of the rod about its CG
+
+    Returns:
+        accel: The angular acceleration of the rod
+
+    """ 
+
+    # Torque is calculated by r x F 
+    # Or F * distance * sin(angle)
+
+    angle_r = np.arcsin(np.clip(inertia * acceleration / (distance * force), 0, 1)) * 180/np.pi
+
+   # print(angle_r)
+
+    return angle_r
+
+# TODO: Incorporate state
+def controlLoop(rocket_angle, target_angle, p, i, d, previous_error, previous_integral, time_since_last_measurement = 0.01):
+    #return 0, 0, 0
+    rocket_angle = np.round(rocket_angle, 2) + np.random.randn() * 0.001
+    previous_error = np.round(previous_error, 2) + np.random.randn() * 0.001
+    previous_integral = np.round(previous_integral, 2) + np.random.randn() * 0.001
+
+    error = (rocket_angle - target_angle) / 10.
+
+    proportional = p * error
+    
+    integral_ = previous_integral + np.clip(error, -0.1, 0.1) * time_since_last_measurement
+
+    derivative = d * (error - previous_error) / time_since_last_measurement
+
+    gimbal_angle = proportional + i * integral_ + derivative
+
+    gimbal_angle = np.round(gimbal_angle, 2) + np.random.randn() * 0.001
+    previous_error = np.round(previous_error, 2) + np.random.randn() * 0.001
+    integral_ = np.round(integral_, 2) + np.random.randn() * 0.001
+
+    if gimbal_angle > 3 or gimbal_angle < -3:
+        integral_ = integral_ -  np.clip(error, -0.1, 0.1) * time_since_last_measurement
+
+    integral_ = np.clip(integral_, -10, 10)
+
+    return gimbal_angle, error, integral_
+
+def controlLoop2(average_thrust, diff_cg, inertia, rocket_angle, target_angle, previous_error, time_since_last_measurement = 0.1):
+    error = (rocket_angle - target_angle)
+
+    velocity = (error - previous_error) / time_since_last_measurement
+    t = 2 * error / velocity
+
+    acceleration = velocity / t
+    
+    # Calculate the torque necessary to attain the acceleration
+    gimbal_angle = calculateAngleFromAcceleration(average_thrust, diff_cg, acceleration, inertia)
+
+    return gimbal_angle, error
+
+# TODO: I'm pretty sure you can get screen dimensions via the screen object so you should explore that when you get WiFi again
+def drawRocket(screen, screen_dimensions, length, pos, diff_cg, angle, gimbal_angle, angular_vel, gimbal_vel):
+    """ drawRocket(length, diff_cg, angle) -> *
+
+    Draws the rocket and helpful indicators
+    """
+
+    # CG appears at center of viewport
+    center = np.array([screen_dimensions[0] / 2., screen_dimensions[1]]) + pos
+
+    base = angleToVec(angle) * (-diff_cg) * 400 + center    # The 100 is a scaling parameter so coordinates are large enough to be seen on a display
+    top = angleToVec(angle) * (length - diff_cg) * 400 + center
+
+    pygame.draw.line(screen, (0, 0, 0), center.astype(int), base.astype(int), 3)
+    pygame.draw.line(screen, (150, 255, 150), base.astype(int), base.astype(int) + np.array([angular_vel, 0]) * 10, 1)
+    pygame.draw.line(screen, (0, 0, 0), center.astype(int), top.astype(int), 3)
+
+    # Draw gimbal line
+    gimbal_vec = -angleToVec(gimbal_angle + angle)
+    gimbal_end = gimbal_vec * 30
+    pygame.draw.aaline(screen, (0, 0, 255), base.astype(int), base.astype(int) + gimbal_end.astype(int), 1)
+    pygame.draw.line(screen, (150, 255, 150), base.astype(int) + gimbal_end.astype(int), base.astype(int) + gimbal_end.astype(int) + np.array([gimbal_vel, 0]) * 10, 1)
+
+    # Pivot
+    pygame.draw.circle(screen, (255, 255, 255), center.astype(int), 1, 1)
+
+def angleToVec(angle):
+    """angleToVec(angle) -> x, y
+
+    Converts an angle to a vector
+
+    Returns:
+        [
+            x, : The x component of the vector 
+            y  : The y component of the vector
+        ]
+    """
+
+    angle_r = np.radians(-angle - 90)
+
+    x = np.cos(angle_r)
+    y = np.sin(angle_r)
+
+    return np.array([x, y])
+
+def absoluteToRelativeAngle(abs_angle, rocket_angle):
+    """absoluteToRelativeAngle(abs_angle, rocket_angle) -> rel_angle
+
+    Converts an absolute angle (an angle relative to the static reference frame of the viewport), to one that is relative to the roll axis of the rocket.
+
+    Params:
+        abs_angle (Degrees): Angle relative to static reference frame
+        rocket_angle (Degrees): The angle that the rocket is pointing relative to the static reference frame
+
+    Returns:
+        rel_angle: An angle relative to the roll axis of the rocket
+    """
+
+    return abs_angle + rocket_angle     # Wow that's a lot of documentation for one line rip
+"""
