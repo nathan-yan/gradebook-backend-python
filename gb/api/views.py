@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup as bs
 
 from .. import variables
 from .. import db
+from .. import auth
+
 from . import api
 
 @api.route("/authenticate", methods = ["POST"])
@@ -53,6 +55,35 @@ def authenticate():
     
     # Also send over the cookies
 
+    # Put token and username in db
+    user = db.USERS.find_one({
+        "username" : username
+    })
+
+    token = auth.generate_token()
+
+    if (not user):  # User does not exist, do some initialization stuff and insert the user into the db with the initialized flag set to false
+        db.USERS.insert_one({
+            "username" : username,
+            "initialized" : False,
+            "classLinks" : {},
+            "quarterLinks" : [],
+            "profile" : "",
+            "synergyCookies" : json.dumps(s.cookies.get_dict()) 
+        })
+    else:
+        db.USERS.update_one({
+            "username" : username
+        }, {
+            "synergyCookies" : json.dumps(s.cookies.get_dict())
+        })
+
+        db.SESSIONS.insert_one({
+            "username" : username,
+            "token" : token,
+            "time_created" : time.time()            # there is a mongodb thing for automatically deleting these, don't remember how to do it though, will have to settle for this for now
+        })
+
     test = s.post(variables.BASE_URL + "service/PXP2Communication.asmx/LoadControl", 
     json = {"request" : {
         "control" : "Gradebook_ClassDetails",
@@ -69,11 +100,59 @@ def authenticate():
 
     return json.dumps({
         "status" : "success",
-        "cookie" : s.cookies.get_dict()
+        "you are" : "logged in!"
     })
 
-@api.route("/classes", methods = ['POST'])
+@api.route("/classes", methods = ['GET'])
 def classes():
-    print(request.headers['Gb-Cookie'])
+   # print(request.headers['Gb-Cookie'].replace("'", '"'))
+    cookies = json.loads(request.headers['Gb-Cookie'].replace("'", '"'))
+    #print(cookies)
 
-    return ""
+    classes_page = r.get(variables.BASE_URL + "/PXP2_Gradebook.aspx?AGU=0", cookies = cookies)
+   # print(classes_page.text)
+
+    parsed_page = bs(classes_page.text)
+    table = parsed_page.find("table", attrs = {
+        "class" : "data-table"
+    })
+
+    classes = table.find_all('tr')
+    
+    class_data = []
+
+    for c in classes[1:]:
+        period = c.find("td", attrs = {
+            "class" : "period"
+        }).get_text()
+
+        class_name = c.find("button", attrs = {
+            "class" : "course-title"
+        }).get_text()
+
+        teacher_name = c.find("span", attrs = {
+            "class" : "teacher"
+        }).get_text()
+
+        room = c.find("div", attrs = {
+            "class" : "teacher-room"
+        }).get_text()
+
+        grade = c.find("span", attrs = {
+            "class" : "score"
+        }).get_text()
+
+        class_data.append({
+            "teacher" : teacher_name,
+            "class_name" : class_name,
+            "grade" : grade, 
+            "period" : period,
+            "room" : room
+        })
+
+    return json.dumps({
+        "status" : "success",
+        "data" : class_data
+    })
+
+@api.route("/classes/:class_period", methods = ['POST'])
