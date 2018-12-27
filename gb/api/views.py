@@ -45,6 +45,17 @@ def authenticate():
     # If the request was valid, send over the cookies
     print(s.cookies)
 
+    test = s.post(variables.BASE_URL + "service/PXP2Communication.asmx/LoadControl", 
+    json = {"request" : {
+        "control" : "Gradebook_ClassDetails",
+        "parameters": {"viewName":None,"studentGU":"AEA18D8C-387E-4CE1-8F05-FE47057D6A61","schoolID":7,"classID":12723,"markPeriodGU":None,"gradePeriodGU":"2F3F407F-596E-46BA-BABF-4BB5B64F0D8B","subjectID":-1,"teacherID":-1,"assignmentID":-1,"standardIdentifier":None,"AGU":"0","OrgYearGU":"C8636FF0-07E0-4CE1-B8D1-17BADE41D7FC"}
+    }})
+
+    res = str(test.json()['d']['Data']['html'])
+    idx = res.index('"dataSource"')
+    print(idx)
+    print(res[idx:])
+
     return json.dumps({
         "status" : "success",
         "cookie" : s.cookies.get_dict()
