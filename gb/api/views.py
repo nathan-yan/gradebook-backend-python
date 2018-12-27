@@ -8,6 +8,7 @@ import json
 from bs4 import BeautifulSoup as bs
 
 from .. import variables
+from .. import db
 from . import api
 
 @api.route("/authenticate", methods = ["POST"])
@@ -40,10 +41,17 @@ def authenticate():
     # Send the payload
     response_page = s.post(variables.BASE_URL + "PXP2_Login_Student.aspx?regenerateSessionId=True", authentication_payload)
 
+    print(response_page.text)
+
     # Do some checking to see if the response_page is correct
 
-    # If the request was valid, send over the cookies
-    print(s.cookies)
+    # If the request was valid, log the user into the database
+    # If this is a first time login, we register the user by going through the setup
+
+    # Look through all of the classes for their Gradebook_ClassDetails parameters
+    # Look through all of the quarters and get their parameters as well
+    
+    # Also send over the cookies
 
     test = s.post(variables.BASE_URL + "service/PXP2Communication.asmx/LoadControl", 
     json = {"request" : {
@@ -52,11 +60,20 @@ def authenticate():
     }})
 
     res = str(test.json()['d']['Data']['html'])
-    idx = res.index('"dataSource"')
-    print(idx)
-    print(res[idx:])
+    start_idx = res.index('"dataSource"')
+    end_idx = res[start_idx:].index("}]")
+    print("{" + res[start_idx:start_idx + end_idx] + "}]}")
+    
+    class_data = json.loads("{" + res[start_idx:start_idx + end_idx] + "}]}")
+    print(class_data['dataSource'][0]['GBAssignment'])
 
     return json.dumps({
         "status" : "success",
         "cookie" : s.cookies.get_dict()
     })
+
+@api.route("/classes", methods = ['POST'])
+def classes():
+    print(request.headers['Gb-Cookie'])
+
+    return ""
