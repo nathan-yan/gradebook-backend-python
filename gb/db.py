@@ -2,7 +2,9 @@ from pymongo import MongoClient
 
 from . import variables
 
-DATABASE = MongoClient(variables.DB_CONNECTION_STRING)
+connection = MongoClient(variables.DB_CONNECTION_STRING)
+GRADEBOOK = connection['gradebook-primary']
 
-USERS = DATABASE.Users
-CLASSES = DATABASE.Classes
+USERS = GRADEBOOK.Users
+CLASSES = GRADEBOOK.Classes
+SESSIONS = GRADEBOOK.Sessions
