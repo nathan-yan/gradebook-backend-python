@@ -11,7 +11,7 @@ def generate_token(length = 16):
 
     res = ""
     for byte in random_bytes:
-        res += valid_characters[ord(byte) % len(valid_characters)]
+        res += valid_characters[byte % len(valid_characters)]
 
     return res
 
