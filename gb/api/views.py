@@ -15,6 +15,8 @@ from .. import studentvue_requests
 
 from . import api
 
+from flask_cors import CORS
+
 @api.route("/authenticate", methods = ["POST"])
 def authenticate():
     username = request.form.get("username")
@@ -392,3 +394,10 @@ def class_period(period):
     
     class_data = json.loads("{" + res[start_idx:start_idx + end_idx] + "}]}")
     #print(class_data['dataSource'][0]['GBAssignment'])"""
+
+@api.after_request
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+
+    return response
