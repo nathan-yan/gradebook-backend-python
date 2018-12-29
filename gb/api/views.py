@@ -398,6 +398,9 @@ def class_period(period):
 @api.after_request
 def after_request(response):
     header = response.headers
-    header['Access-Control-Allow-Origin'] = 'http://localhost:3000,https://grades.llambda.net'
+    origin = header["origin"]
+
+    if (origin in variables.ALLOWED_ORIGINS):
+        header['Access-Control-Allow-Origin'] = origin 
 
     return response

@@ -7,3 +7,4 @@ environment_variables = os.environ
 DB_CONNECTION_STRING = "mongodb+srv://admin:%s@gradebook-cluster0-l24me.mongodb.net/test?retryWrites=true" % environment_variables['GRADEBOOK_DB_PASSWORD']
 
 BASE_URL = "https://wa-bsd405-psv.edupoint.com/"
+ALLOWED_ORIGINS =  ['http://localhost:3000', 'https://grades.llambda.net']
