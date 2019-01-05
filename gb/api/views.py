@@ -418,6 +418,31 @@ def class_period(period):
     class_data = json.loads("{" + res[start_idx:start_idx + end_idx] + "}]}")
     #print(class_data['dataSource'][0]['GBAssignment'])"""
 
+@api.route("/logout", methods = ['POST'])
+def logout():
+    try:
+        verified = auth.auth_by_cookie(request)
+    except exceptions.InvalidCookiesError:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "INVALID_COOKIES_GB"
+        }), 401
+    except exceptions.InvalidAPIKeyError:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "INVALID_API_KEY"
+        })
+    
+    username, cookies = verified
+
+    db.SESSIONS.delete_many({
+        "username" : username
+    })
+
+    return json.dumps({
+        "you are" : "logged out!"
+    })
+
 @api.after_request
 def after_request(response):
     header = request.headers
