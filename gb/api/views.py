@@ -19,8 +19,31 @@ from flask_cors import CORS
 
 @api.route("/authenticate", methods = ["POST"])
 def authenticate():
-    username = request.form.get("username")
-    password = request.form.get("password")
+    print(request.form)
+    print(request.json)
+    
+    try:
+        username = request.form["username"]
+        password = request.form["password"]
+    except KeyError:
+        username = request.json['username']
+        password = request.json['password']
+
+    print(username, password)
+    print('hello')
+
+    #username = request.json["username"]
+    #password = request.json["password"]
+
+    print(request.form)
+    print(request.json)
+
+    #print(request)
+    #print(request.form)
+    #print(request.json)
+
+    #print(username)
+    #print(password[0:3])
 
     # Request the StudentVue login page
     s = session()
@@ -47,7 +70,7 @@ def authenticate():
 
     # Send the payload
     response_page = s.post(variables.BASE_URL + "PXP2_Login_Student.aspx?regenerateSessionId=True", authentication_payload)
-    print(response_page.text)
+    #print(response_page.text)
 
   #  print(response_page.text)
 
@@ -135,13 +158,13 @@ def authenticate():
             class_args.append(args)
 
         # Get current quarter
-        current_quarter_arg = parsed_page.find("button", attrs = {
+        current_quarter_arg = parsed_gradebook_page.find("button", attrs = {
             "class" : "btn-link"
         }).attrs.get("data-term-name")
 
-        for (q, quarter) in enumerate(user['classArgs']):
+        for (q, quarter) in enumerate(class_args):
             print(quarter)
-            if quarter[quarter.keys()[0]]['FocusArgs']['gradePeriodGU'] == current_quarter_arg:
+            if quarter[list(quarter.keys())[0]]['FocusArgs']['gradePeriodGU'] == current_quarter_arg:
                 current_quarter = q
                 break;
 
@@ -156,7 +179,7 @@ def authenticate():
             "quarterArgs" : quarter_args,
             "currentQuarterArg" : "",
             "profile" : "",
-            "synergyCookies" : s.cookies.get_dict(),
+            "synergyCookies" : json.dumps(s.cookies.get_dict()),
             "currentQuarter" : current_quarter
         })
 
@@ -166,7 +189,7 @@ def authenticate():
             "username" : username
         }, {
             "$set" : {
-                "synergyCookies" : s.cookies.get_dict()
+                "synergyCookies" : json.dumps(s.cookies.get_dict())
             }
         }, upsert = False)
 
@@ -213,7 +236,7 @@ def classes():
             "error_reason" : "NO_ACCOUNT"
         }), 403
 
-    classes_page = r.get(variables.BASE_URL + "/PXP2_Gradebook.aspx?AGU=0", cookies = user['synergyCookies'])
+    classes_page = r.get(variables.BASE_URL + "/PXP2_Gradebook.aspx?AGU=0", cookies = json.loads(user['synergyCookies']))
 
    # print(classes_page.text)
 
@@ -232,7 +255,7 @@ def classes():
 
     for (q, quarter) in enumerate(user['classArgs']):
         print(quarter)
-        if quarter[quarter.keys()[0]]['FocusArgs']['gradePeriodGU'] == current_quarter_arg:
+        if quarter[list(quarter.keys())[0]]['FocusArgs']['gradePeriodGU'] == current_quarter_arg:
             current_quarter = q
             break;
 
@@ -305,7 +328,7 @@ def class_period(period):
         }), 403
 
     quarter = user['currentQuarter']
-    class_information = studentvue_requests.load_class_by_cookie(user['synergyCookies'], "Gradebook_ClassDetails", 
+    class_information = studentvue_requests.load_class_by_cookie(json.loads(user['synergyCookies']), "Gradebook_ClassDetails", 
         user['classArgs'][quarter][period]['FocusArgs'] #this is a fat yikes
     )
 
@@ -397,10 +420,16 @@ def class_period(period):
 
 @api.after_request
 def after_request(response):
-    header = response.headers
-    origin = header["origin"]
-
+    header = request.headers
+    #print(header)
+    origin = header.get("Origin")
+    #print(origin)
+    #print(response.headers)
     if (origin in variables.ALLOWED_ORIGINS):
-        header['Access-Control-Allow-Origin'] = origin 
+        response.headers['Access-Control-Allow-Origin'] = origin 
+        response.headers['Access-Control-Allow-Credentials'] = "true"
+        response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
+
+    #print(response.headers)
 
     return response
