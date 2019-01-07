@@ -8,3 +8,4 @@ GRADEBOOK = connection['gradebook-primary']
 USERS = GRADEBOOK.Users
 CLASSES = GRADEBOOK.Classes
 SESSIONS = GRADEBOOK.Sessions
+API_KEYS = GRADEBOOK.Keys
