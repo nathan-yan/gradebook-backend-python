@@ -447,6 +447,40 @@ def logout():
         "you are" : "logged out!"
     })
 
+@api.route("/isAuthenticated", methods = ['GET'])
+def isAuthenticated():
+    try:
+        verified = auth.auth_by_cookie(request)
+    except exceptions.InvalidCookiesError:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "INVALID_COOKIES_GB"
+        }), 401
+    except exceptions.InvalidAPIKeyError:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "INVALID_API_KEY"
+        }), 401
+    
+    username, cookies = verified
+
+    user = db.USERS.find_one({
+        "username" : username
+    })
+
+    if not user:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "NO_ACCOUNT"
+        }), 403
+
+    homepage = r.get(variables.BASE_URL + "/Home_PXP2", cookies = json.loads(user['synergyCookies']))
+
+    if "StudentVUE Account Access" in homepage.text: 
+        return json.dumps({}), 401
+    else:
+        return json.dumps({}), 200
+    
 @api.after_request
 def after_request(response):
     header = request.headers
