@@ -70,6 +70,10 @@ def authenticate():
 
     # Send the payload
     response_page = s.post(variables.BASE_URL + "PXP2_Login_Student.aspx?regenerateSessionId=True", authentication_payload)
+
+    if "Invalid user id or password" in response_page.text:
+        return json.dumps({}), 401 
+
     #print(response_page.text)
 
   #  print(response_page.text)
