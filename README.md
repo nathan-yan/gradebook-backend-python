@@ -1,5 +1,5 @@
 # GradeBook
-GradeBook is a Synergy StudentVUE interface that offers a more modern UI and useful features for students such as projected grade calculation and graphical interpretations of grade through time. GradeBook seeks to improve the look and experience of using StudentVUE.
+GradeBook is a Synergy StudentVUE interface that offers a modern UI and useful features for students, such as projected grade calculation and graphical interpretations of grade through time. GradeBook aims to improve the look and experience of StudentVUE.
 
 GradeBook's backend is currently hosted on a DigitalOcean droplet. We use HTTPS and HSTS to ensure that all information between the users' computer and Synergy's servers is encrypted.
 
