@@ -474,7 +474,7 @@ def isAuthenticated():
             "error_reason" : "NO_ACCOUNT"
         }), 403
 
-    homepage = r.get(variables.BASE_URL + "/PXP2_Gradebook.aspx?AGU=0", cookies = user['synergyCookies'])
+    homepage = r.get(variables.BASE_URL + "/PXP2_Gradebook.aspx?AGU=0", cookies = json.loads(user['synergyCookies']))
 
     print(homepage.text)
 
