@@ -461,7 +461,7 @@ def isAuthenticated():
             "status" : "failed",
             "error_reason" : "INVALID_API_KEY"
         }), 401
-    
+
     username, cookies = verified
 
     user = db.USERS.find_one({
@@ -474,9 +474,11 @@ def isAuthenticated():
             "error_reason" : "NO_ACCOUNT"
         }), 403
 
-    homepage = r.get(variables.BASE_URL + "/Home_PXP2", cookies = json.loads(user['synergyCookies']))
+    homepage = r.get(variables.BASE_URL + "/PXP2_Gradebook.aspx?AGU=0", cookies = user['synergyCookies'])
 
-    if "StudentVUE Account Access" in homepage.text: 
+    print(homepage.text)
+
+    if "StudentVUE Access" in homepage.text: 
         return json.dumps({}), 401
     else:
         return json.dumps({}), 200
