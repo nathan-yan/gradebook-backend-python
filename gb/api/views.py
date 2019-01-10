@@ -480,7 +480,35 @@ def isAuthenticated():
         return json.dumps({}), 401
     else:
         return json.dumps({}), 200
+
+@api.route("/deactivate")
+def deactivate():
+    try:
+        verified = auth.auth_by_cookie(request)
+    except exceptions.InvalidCookiesError:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "INVALID_COOKIES_GB"
+        }), 401
+    except exceptions.InvalidAPIKeyError:
+        return json.dumps({
+            "status" : "failed",
+            "error_reason" : "INVALID_API_KEY"
+        }), 401
     
+    username, cookies = verified
+
+    # Delete user
+    db.USERS.delete_one({
+        "username" : username
+    })
+
+    db.SESSIONS.delete_many({
+        "username" : username
+    })
+
+    return json.dumps({}), 200 
+
 @api.after_request
 def after_request(response):
     header = request.headers
