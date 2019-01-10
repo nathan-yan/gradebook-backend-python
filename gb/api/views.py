@@ -187,6 +187,12 @@ def authenticate():
             "currentQuarter" : current_quarter
         })
 
+        db.SESSIONS.insert_one({
+            "username" : username,
+            "token" : token,
+            "time_created" : time.time()            # there is a mongodb thing for automatically deleting these, don't remember how to do it though, will have to settle for this for now
+        })
+
     else:
         print('in else')
         db.USERS.update_one({
@@ -483,7 +489,7 @@ def isAuthenticated():
     else:
         return json.dumps({}), 200
 
-@api.route("/deactivate")
+@api.route("/deactivate", methods = ['POST'])
 def deactivate():
     try:
         verified = auth.auth_by_cookie(request)
